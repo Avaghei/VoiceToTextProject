@@ -1,39 +1,21 @@
-import pandas as pd
-import numpy as np 
-from langchain_cohere import CohereEmbeddings
-import os
-import time 
-from hazm import Normalizer
-import unicodedata
-import re
 from hazm import word_tokenize
+from hazm import Normalizer
 from langchain_huggingface import HuggingFaceEmbeddings
-import torch
 from sklearn.metrics.pairwise import cosine_similarity
 import ast
 import heapq
 import Levenshtein
-
-
-
-# Verify that the environment variable is set
-print(f"FLAIR_CACHE_ROOT environment variable set to: {os.environ.get('FLAIR_CACHE_ROOT')}")
-from langchain_cohere import ChatCohere
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
 from rapidfuzz import fuzz , distance
+import os
+import time
+import re
+import unicodedata
+import torch
+import pandas as pd
+from langchain_cohere import CohereEmbeddings
+import numpy as np
 
 
-
-
-from flair.models import SequenceTagger
-from flair.data import Sentence
-import flair
-from pathlib import Path
-
-flair.cache_root = Path("D:\models\.flair")# WORKS
-
-print(f"Flair cache root directory: {flair.cache_root}")
 class NormalizeTexts : 
     def __init__(self):
         pass
@@ -62,41 +44,7 @@ class NormalizeTexts :
     def tokenize_names(self,text):
         return word_tokenize(text)
     
-class NameEntityRecognitionModel:
 
-    def __init__(self, model_name="PooryaPiroozfar/Flair-Persian-NER"):
-        # Load the model
-        self.tagger = SequenceTagger.load(model_name)
-
-    def getEntities(self, text):
-        sentence = Sentence(text)
-        self.tagger.predict(sentence)
-
-        # --- Collect entities ---
-        entities = {}
-        entity_texts = []
-
-        for span in sentence.get_spans("ner"):
-            ent_type = span.get_label("ner").value
-            if ent_type not in entities:
-                entities[ent_type] = []
-            entities[ent_type].append(span.text)
-            entity_texts.append(re.escape(span.text))  # escape for regex
-            print(f"Entity: {span.text}, Type: {ent_type}, Confidence: {span.score}")
-
-        # --- Find unlabeled text by splitting around entities ---
-        if entity_texts:
-            # Create regex pattern that matches all entities
-            pattern = "|".join(entity_texts)
-            # Split text at entities; remaining pieces are unlabeled
-            unlabelled = [s.strip() for s in re.split(pattern, text) if s.strip()]
-        else:
-            unlabelled = [text.strip()]
-
-        return {
-            "entities": entities,
-            "unlabelled": unlabelled
-        }
 
 class EmbeddingModel:
     def __init__(self,API_KEY=None,cohere_model=None,use_cohere=False,hugging_face_model_path = None,max_retries=5 , request_timeout=20 ):
@@ -120,8 +68,8 @@ class EmbeddingModel:
         else : 
             device = "cuda" if torch.cuda.is_available() else "cpu"
             embedding_model = HuggingFaceEmbeddings(
-            model_name=self.hugging_face_model_path,  # local path
-            model_kwargs={"device": device}  # send to GPU if available
+            model_name=self.hugging_face_model_path, 
+            model_kwargs={"device": device}  
             )
         return embedding_model
         
@@ -134,7 +82,7 @@ class CreateEmbedding:
 
 
         self.embedding_model = EmbeddingModel(API_KEY=API_KEY,cohere_model=cohere_model,use_cohere=use_cohere,hugging_face_model_path = hugging_face_model_path,
-                                              max_retries=max_retries , request_timeout=request_timeout ).getModel()
+                                              max_retries=max_retries , request_timeout=request_timeout).getModel()
         
         if self.normalizing :
             self.normalizer = NormalizeTexts()
@@ -203,8 +151,8 @@ class CalculateSimilarities:
         self.df = pd.read_csv(csv_file_path,delimiter=delimiter,encoding=encoding)
         self.normalizing = Normalizing
 
-
-        self.embedding_model = EmbeddingModel(API_KEY=API_KEY,cohere_model=cohere_model,use_cohere=use_cohere,hugging_face_model_path = hugging_face_model_path,
+        if self.use_cohere or self.use_hugging_face : 
+            self.embedding_model = EmbeddingModel(API_KEY=API_KEY,cohere_model=cohere_model,use_cohere=use_cohere,hugging_face_model_path = hugging_face_model_path,
                                               max_retries=max_retries , request_timeout=request_timeout ).getModel()
         if self.normalizing :
             self.normalizer = NormalizeTexts()
@@ -282,9 +230,3 @@ class CalculateSimilarities:
 
         return idx_to_similarity,top_k,top_k_with_scores
    
-    
-
-        
-
-
-
