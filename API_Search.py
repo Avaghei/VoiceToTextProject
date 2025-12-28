@@ -28,15 +28,15 @@ class API_Search:
     
     
     def Search(self, names_list, input_name ,k=10):
-        #if self.__normalizing:
-            #input_name = self.__normalizer.normalize_names(input_name)
-            #input_name = self.__normalizer.phonetic_normalize(input_name)
+        if self.__normalizing:
+            input_name = self.__normalizer.normalize_names(input_name)
+            input_name = self.__normalizer.phonetic_normalize(input_name)
             #print(f"Normalized input name: {input_name}")
-           # for i in range(len(names_list)):
-           #     names_list[i][0] = self.__normalizer.phonetic_normalize(names_list[i][0])
-           #     print(
-           #         f"Normalized name {i}: {names_list[i][0]}"  
-           #     )
+            for i in range(len(names_list)):
+                names_list[i][0] = self.__normalizer.phonetic_normalize(names_list[i][0])
+               # print(
+               #     f"Normalized name {i}: {names_list[i][0]}"  
+               # )
               
         prompt = ChatPromptTemplate.from_messages([
     (
